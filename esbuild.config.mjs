@@ -1,6 +1,11 @@
 import esbuild from "esbuild";
-import process from "process";
+import process from "node:process";
 import { builtinModules } from 'node:module';
+import fs from "node:fs";
+import path from "node:path";
+import copyPluginPkg from "@sprout2000/esbuild-copy-plugin";
+
+const { copyPlugin } = copyPluginPkg;
 
 const banner =
 `/*
@@ -11,12 +16,89 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === "production");
 
+// CSS 文件路径
+const cssRoot = path.join(process.cwd(), 'src');
+const cssDest = path.join(process.cwd(), 'dist', 'styles.css');
+
+// 递归收集 src 下的所有 CSS 文件
+function collectCssFiles(dir) {
+	const results = [];
+	if (!fs.existsSync(dir)) return results;
+	const entries = fs.readdirSync(dir, { withFileTypes: true });
+	for (const entry of entries) {
+		const full = path.join(dir, entry.name);
+		if (entry.isDirectory()) {
+			results.push(...collectCssFiles(full));
+		} else if (entry.isFile() && entry.name.endsWith('.css')) {
+			results.push(full);
+		}
+	}
+	return results;
+}
+
+// CSS 文件构建函数：将 src 下的所有 CSS 合并输出到 dist/styles.css
+// - 开发模式：只做合并，便于阅读和调试
+// - 生产模式：通过 esbuild 压缩并移除注释，生成精简版 CSS
+async function buildCSS() {
+	if (!fs.existsSync(cssRoot)) {
+		console.warn('⚠ CSS 根目录不存在: src');
+		return;
+	}
+
+	const cssFiles = collectCssFiles(cssRoot).sort();
+	if (!cssFiles.length) {
+		// 如果没有任何 CSS 文件，删除 dist 中已存在的 styles.css（如果存在）
+		if (fs.existsSync(cssDest)) {
+			fs.unlinkSync(cssDest);
+			console.log('✓ 已删除 dist/styles.css（源目录中没有 CSS 文件）');
+		}
+		return;
+	}
+
+	const parts = cssFiles.map((file) => {
+		const rel = path.relative(process.cwd(), file);
+		const content = fs.readFileSync(file, 'utf8');
+		return `/* ${rel} */\n${content}`;
+	});
+	const combinedCss = parts.join('\n\n');
+
+	try {
+		// 确保 dist 目录存在
+		if (!fs.existsSync(path.dirname(cssDest))) {
+			fs.mkdirSync(path.dirname(cssDest), { recursive: true });
+		}
+
+		// 使用 esbuild 对 CSS 做一次转换：
+		// - 生产模式：压缩并移除注释
+		// - 开发模式：不压缩，仅做语法校验（基本保持原样）
+		const result = await esbuild.transform(combinedCss, {
+			loader: 'css',
+			minify: prod,
+			sourcemap: false,
+		});
+
+		fs.writeFileSync(cssDest, result.code);
+	} catch (error) {
+		// 如果压缩失败，回退到未压缩版本，避免影响开发/构建
+		console.error('构建 CSS 时出错，已回退到未压缩版本:', error);
+		fs.writeFileSync(cssDest, combinedCss);
+	}
+
+	console.log(`✓ CSS 已打包: ${cssDest}（共 ${cssFiles.length} 个文件）`);
+}
+
 const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
 	entryPoints: ["src/main.ts"],
 	bundle: true,
+	loader: {
+		'.ts': 'ts',
+		'.tsx': 'tsx',
+		'.json': 'json',
+		'.css': 'empty', // 忽略 CSS 导入，因为我们使用自定义的 buildCSS 函数生成 styles.css
+	},
 	external: [
 		"obsidian",
 		"electron",
@@ -37,13 +119,36 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outdir: "dist",
+	outbase: "src",
 	minify: prod,
+	plugins: [
+		copyPlugin({
+			src: "manifest.json",
+			dest: "dist/manifest.json"
+		})
+	]
 });
 
 if (prod) {
+	// 生产模式：先构建 CSS，然后构建 JS
+	await buildCSS();
 	await context.rebuild();
 	process.exit(0);
 } else {
+	// 开发模式：初始构建 CSS，然后监听变化
+	await buildCSS();
+	
+	// 开发模式下监听 src 下所有 CSS 文件变化
+	if (fs.existsSync(cssRoot)) {
+		fs.watch(cssRoot, { recursive: true }, (eventType, filename) => {
+			if (filename && filename.endsWith('.css')) {
+				// 异步重建 CSS（无需等待完成）
+				void buildCSS();
+			}
+		});
+		console.log('✓ CSS 监听已启动');
+	}
+	
 	await context.watch();
 }
