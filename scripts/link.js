@@ -91,7 +91,7 @@ if (fs.existsSync(targetPluginDir)) {
             console.warn(`⚠️  目标路径已存在，但不是软链接: ${targetPluginDir}`);
             console.log('正在自动删除以便创建软链接...');
             fs.rmSync(targetPluginDir, { recursive: true, force: true });
-            console.log('✅ 已删除旧目录');
+            console.log('✅ 已删除');
         }
     } catch (err) {
         // 如果检查失败，尝试直接删除
@@ -121,7 +121,7 @@ try {
     // Linux/Mac 上使用 'dir' 类型
     const linkType = process.platform === 'win32' ? 'junction' : 'dir';
     fs.symlinkSync(distDir, targetPluginDir, linkType);
-    console.log(`✅ 软链接创建成功！(Symlink created successfully!)`);
+    console.log(`✅ 软链接创建成功！`);
     console.log(`   源路径: ${distDir}`);
     console.log(`   目标路径: ${targetPluginDir}`);
     console.log(`   类型: ${linkType}`);

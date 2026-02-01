@@ -54,10 +54,9 @@ Quick starting guide for new plugin devs:
    ```bash
    npm run dev
    ```
-   This will automatically perform the following operations:
-   - Create `dist` directory (if it doesn't exist)
-   - Automatically create symlink to your Obsidian vault plugin directory (if it doesn't exist or points to wrong location, it will be automatically deleted and recreated)
-   - Start compilation and watch for file changes
+   Automatically creates a symlink and starts watching for file changes. Code changes will automatically trigger recompilation, and Obsidian will automatically reload the plugin.
+   
+   > 💡 Development mode uses symlinks, the `dist` directory is directly linked to the Obsidian plugin directory, no need to manually copy files
 
 ### 📁 Recommended Project Structure
 
@@ -114,9 +113,18 @@ Execution flow of the `npm version` command (npm built-in behavior):
 ```bash
 npm run build
 ```
-This will perform a production build, outputting build artifacts to the `dist` directory. Before building, it will automatically:
-- Create `dist` directory (if it doesn't exist)
-- Automatically create symlink to your Obsidian vault plugin directory (if it doesn't exist or points to wrong location, it will be automatically deleted and recreated)
+Performs type checking, code minification build, and copies files from the `dist` directory to the Obsidian vault plugin directory. If the target path is a symlink, it will be automatically deleted and a real folder will be created.
+
+> 💡 Production build uses file copying, suitable for release and final version testing
+
+**Development Mode vs Production Build**
+
+| Feature | Development Mode (`npm run dev`) | Production Build (`npm run build`) |
+|---------|--------------------------------|-----------------------------------|
+| Link Method | Symlink (points to `dist` directory) | File Copy (actual files) |
+| Code Minification | No (for debugging) | Yes |
+| File Watching | Yes (auto recompile) | No |
+| Use Case | Daily development | Pre-release testing, official release |
 
 **Release New Version**
 
@@ -144,6 +152,40 @@ This will perform a production build, outputting build artifacts to the `dist` d
 - Publish initial version (see release process above)
 - Ensure you have a `README.md` file in the root of your repository
 - Submit a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin
+
+### Script Documentation
+
+The project includes two helper scripts to simplify the development workflow:
+
+#### `scripts/link.js` - Create Symlink
+
+Used in development mode, automatically creates a symlink linking the `dist` directory to the Obsidian vault plugin directory.
+
+**Features**:
+- Automatically creates `dist` directory (if it doesn't exist)
+- Checks and creates symlink to Obsidian vault plugin directory
+- If symlink exists but points to wrong location, automatically deletes and recreates it
+- If target path exists but is not a symlink, automatically deletes it and creates a symlink
+- Ensures `.obsidian/plugins` directory exists
+
+**Use Case**: Automatically called in development mode (`npm run dev`)
+
+#### `scripts/copy.js` - Copy Files
+
+Used in production build, copies build artifacts from the `dist` directory to the Obsidian vault plugin directory.
+
+**Features**:
+- Copies `main.js`, `manifest.json`, and `styles.css` (optional) from `dist` directory
+- If target path is a symlink, automatically deletes the symlink and creates a real folder
+- If target path is a regular directory, uses it directly
+- If target path is not a directory, exits with error
+- Provides detailed copy progress and result statistics
+
+**Use Case**: Automatically called in production build (`npm run build`)
+
+**Notes**:
+- Both scripts depend on the `VAULT_PATH` environment variable in the `.env` file
+- If `VAULT_PATH` is not set, `link.js` will exit with error, `copy.js` will skip copying
 
 ## Funding URL
 

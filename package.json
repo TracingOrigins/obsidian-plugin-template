@@ -6,7 +6,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "node scripts/link.js && node esbuild.config.mjs",
-		"build": "node scripts/link.js && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && node scripts/copy.js",
 		"version": "node version-bump.mjs",
 		"lint": "eslint ."
 	},
