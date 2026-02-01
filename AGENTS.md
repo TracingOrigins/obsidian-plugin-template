@@ -164,11 +164,11 @@ Follow Obsidian's **Developer Policies** and **Plugin Guidelines**. In particula
 **main.ts** (minimal, lifecycle only):
 ```ts
 import { Plugin } from "obsidian";
-import { MySettings, DEFAULT_SETTINGS } from "./settings";
+import { SampleSettings, DEFAULT_SETTINGS } from "./settings";
 import { registerCommands } from "./commands";
 
-export default class MyPlugin extends Plugin {
-  settings: MySettings;
+export default class SamplePlugin extends Plugin {
+  settings: SampleSettings;
 
   async onload() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -179,12 +179,12 @@ export default class MyPlugin extends Plugin {
 
 **settings.ts**:
 ```ts
-export interface MySettings {
+export interface SampleSettings {
   enabled: boolean;
   apiKey: string;
 }
 
-export const DEFAULT_SETTINGS: MySettings = {
+export const DEFAULT_SETTINGS: SampleSettings = {
   enabled: true,
   apiKey: "",
 };
@@ -217,8 +217,8 @@ this.addCommand({
 ### Persist settings
 
 ```ts
-interface MySettings { enabled: boolean }
-const DEFAULT_SETTINGS: MySettings = { enabled: true };
+interface SampleSettings { enabled: boolean }
+const DEFAULT_SETTINGS: SampleSettings = { enabled: true };
 
 async onload() {
   this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());

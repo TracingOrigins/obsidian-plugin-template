@@ -18,48 +18,132 @@ Quick starting guide for new plugin devs:
 
 - Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
 - Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+- Clone your repo to a local development folder.
 
-## Releasing new releases
+## 🚀 Development Workflow
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### Quick Start
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. **Clone repository**
+   ```bash
+   git clone <repository-url>
+   cd <plugin-directory>
+   ```
 
-## Adding your plugin to the community plugin list
+2. **Check Node.js version**
+   Ensure your Node.js is at least v16:
+   ```bash
+   node --version
+   ```
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+3. **Install dependencies**
+   ```bash
+   npm install
+   # or use yarn
+   yarn
+   ```
 
-## How to use
+4. **Configure environment variables**
+   Create a `.env` file in the project root directory:
+   ```
+   VAULT_PATH=C:/path/to/your/vault
+   ```
+   > Note: The `.env` file is already in `.gitignore` and will not be committed to the repository
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+5. **Start development mode**
+   ```bash
+   npm run dev
+   ```
+   This will automatically perform the following operations:
+   - Create `dist` directory (if it doesn't exist)
+   - Automatically create symlink to your Obsidian vault plugin directory (if it doesn't exist or points to wrong location, it will be automatically deleted and recreated)
+   - Start compilation and watch for file changes
 
-## Manually installing the plugin
+### 📁 Recommended Project Structure
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+```
+src/
+├─ main.ts              # Plugin entry point
+├─ settings.ts          # Settings interface
+├─ ui/                  # UI components
+│  ├─ modals/           # Modals
+│  └─ views/            # Views
+├─ utils/               # Utility functions
+└─ types/               # Type definitions
+```
 
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
+Keep the code structure clear for easy maintenance and extension.
+
+### Code Quality Check
+
+Before committing code or releasing a version, it's recommended to run code quality checks:
+
+- Run `npm run lint` to check code quality and potential issues
+- [ESLint](https://eslint.org/) is a tool that analyzes code to quickly find problems
+- The project is pre-configured with ESLint and a custom ESLint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidian-specific code guidelines
+- GitHub action is configured to automatically check on every commit
+
+### Version Management
+
+**Method 1: Using npm version (requires clean git working directory)**
+```bash
+npm version patch   # 1.0.0 -> 1.0.1
+npm version minor   # 1.0.0 -> 1.1.0
+npm version major   # 1.0.0 -> 2.0.0
+```
+
+Execution flow of the `npm version` command (npm built-in behavior):
+1. Update the version number in `package.json`
+2. Run the `version` script (i.e., `node version-bump.mjs`), sync to `manifest.json` and `versions.json`
+3. **Automatically create git commit** (if git working directory is clean)
+4. **Automatically create git tag** (tag name is the version number, e.g., `v1.0.1`)
+
+> Note: Creating git commit and tag is a built-in feature of the `npm version` command, not defined by our script. If the git working directory is not clean (has uncommitted changes), the command will fail.
+
+**Method 2: Manual version update (recommended, more flexible)**
+1. Manually edit `package.json` and update the `version` field
+2. Run the sync script:
+   ```bash
+   npm run version
+   ```
+   This will sync the current `package.json` version number to `manifest.json` and `versions.json`
+
+### Build and Release
+
+**Production Build**
+```bash
+npm run build
+```
+This will perform a production build, outputting build artifacts to the `dist` directory. Before building, it will automatically:
+- Create `dist` directory (if it doesn't exist)
+- Automatically create symlink to your Obsidian vault plugin directory (if it doesn't exist or points to wrong location, it will be automatically deleted and recreated)
+
+**Release New Version**
+
+1. **Update version number** (see [Version Management](#version-management))
+
+2. **Build production version**
+   ```bash
+   npm run build
+   ```
+
+3. **Create GitHub release**
+   - Create a new GitHub release using the new version number as the "Tag version" (use the exact version number, don't include prefix `v`)
+   - See example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
+
+4. **Upload release files**
+   - Upload files `manifest.json`, `main.js`, `styles.css` as binary attachments
+   - Note: The manifest.json file must be in two places, first the root path of the repository, and also in the release
+
+5. **Publish version**
+   - Publish the GitHub release
+
+**Add Plugin to Community Plugin List**
+
+- Check the [Plugin Guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines)
+- Publish initial version (see release process above)
+- Ensure you have a `README.md` file in the root of your repository
+- Submit a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin
 
 ## Funding URL
 
