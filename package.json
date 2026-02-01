@@ -5,15 +5,17 @@
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
-		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json",
+		"dev": "node scripts/link.js && node esbuild.config.mjs",
+		"build": "node scripts/link.js && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"version": "node version-bump.mjs",
 		"lint": "eslint ."
 	},
 	"keywords": [],
 	"license": "0-BSD",
 	"devDependencies": {
+		"@sprout2000/esbuild-copy-plugin": "^1.1.19",
 		"@types/node": "^16.11.6",
+		"dotenv": "^17.2.3",
 		"esbuild": "0.25.5",
 		"eslint-plugin-obsidianmd": "0.1.9",
 		"globals": "14.0.0",
