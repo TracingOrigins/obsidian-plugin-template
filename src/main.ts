@@ -1,71 +1,45 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import {Notice, Plugin} from 'obsidian';
+import {DEFAULT_SETTINGS, SampleSettings} from "./types/settings";
+import {SampleSettingTab} from "./settings/SettingTab";
+import {registerCommands} from "./commands";
+import {SampleView, VIEW_TYPE_SAMPLE} from "./ui/views/SampleView";
 
-// Remember to rename these classes and interfaces!
+// 注意：请重命名这些类和接口！
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class SamplePlugin extends Plugin {
+	settings: SampleSettings;
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+		// 注册自定义视图
+		this.registerView(VIEW_TYPE_SAMPLE, (leaf) => new SampleView(leaf));
+
+		// 在左侧功能区创建一个图标
+		this.addRibbonIcon('puzzle', '示例插件', (evt: MouseEvent) => {
+			// 当用户点击图标时调用
+			new Notice('这是一个通知！');
 		});
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
+		// 在应用底部添加状态栏项。在移动应用中不起作用
 		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
+		statusBarItemEl.setText('状态栏文本');
 
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
+		// 注册所有命令
+		registerCommands(this);
 
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
+		// 添加设置选项卡，以便用户配置插件的各个方面
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
+		// 如果插件挂接了任何全局 DOM 事件（在不属于此插件的应用部分）
+		// 使用此函数将在插件禁用时自动移除事件监听器
 		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
+			new Notice("点击");
 		});
 
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
+		// 注册间隔时，此函数将在插件禁用时自动清除间隔
+		// 添加 ESLint 注释，忽略 eslint 错误
+		// eslint-disable-next-line obsidianmd/no-sample-code, no-console
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 
 	}
@@ -74,7 +48,7 @@ export default class MyPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<SampleSettings>);
 	}
 
 	async saveSettings() {
@@ -82,18 +56,3 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
