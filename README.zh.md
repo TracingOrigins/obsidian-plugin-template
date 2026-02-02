@@ -98,14 +98,13 @@ npm version major   # 1.0.0 -> 2.0.0
 ```
 
 `npm version` 命令的执行流程（npm 内置行为）：
-1. 更新 `package.json` 的版本号
+1. 更新 `package.json` 的版本号（可能还会改动 lockfile）
 2. 运行 `version` 脚本（即 `node version-bump.mjs`），同步到 `manifest.json` 和 `versions.json`
 3. **自动创建 git commit**（如果 git 工作目录干净）
-4. **自动创建 git tag**（标签名为版本号，如 `v1.0.1`）
+4. **自动创建 git tag**（通常为不带 `v` 的版本号，例如 `1.0.1`）
 
 > 注意：创建 git commit 和 tag 是 `npm version` 命令的内置功能，不是我们脚本定义的。如果 git 工作目录不干净（有未提交的更改），命令会失败。
-> 建议：为了让 `npm version` 创建的 commit **包含** `manifest.json` 和 `versions.json` 的变更，建议把 `package.json` 中的脚本改为：  
-> ` "version": "node version-bump.mjs && git add manifest.json versions.json" `
+
 
 **方式二：手动更新版本（推荐，更灵活）**
 1. 手动编辑 `package.json`，更新 `version` 字段
@@ -113,8 +112,7 @@ npm version major   # 1.0.0 -> 2.0.0
    ```bash
    npm run version
    ```
-   这会同步当前 `package.json` 的版本号到 `manifest.json` 和 `versions.json`
-   （如果你按上面的建议配置了 `version` 脚本，还会自动 `git add manifest.json versions.json`，方便后续手动 commit）
+   这会同步当前 `package.json` 的版本号到 `manifest.json` 和 `versions.json`，并会自动 `git add package.json manifest.json versions.json`，方便后续手动 commit
 
 ### 构建与发布
 

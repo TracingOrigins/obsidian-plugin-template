@@ -101,12 +101,9 @@ Execution flow of the `npm version` command (npm built-in behavior):
 1. Update the version number in `package.json` (and may update the lockfile)
 2. Run the `version` script (i.e., `node version-bump.mjs`), sync to `manifest.json` and `versions.json`
 3. **Automatically create git commit** (if git working directory is clean)
-4. **Automatically create git tag** (tag name is the version number, e.g., `v1.0.1`)
+4. **Automatically create git tag** (typically the plain version number, e.g., `1.0.1`)
 
 > Note: Creating git commit and tag is a built-in feature of the `npm version` command, not defined by our script. If the git working directory is not clean (has uncommitted changes), the command will fail.
->
-> Tip: To ensure the commit created by `npm version` also includes changes to `manifest.json` and `versions.json`, update `package.json` to:
-> ` "version": "node version-bump.mjs && git add manifest.json versions.json" `
 
 **Method 2: Manual version update (recommended, more flexible)**
 1. Manually edit `package.json` and update the `version` field
@@ -114,7 +111,7 @@ Execution flow of the `npm version` command (npm built-in behavior):
    ```bash
    npm run version
    ```
-   This will sync the current `package.json` version number to `manifest.json` and `versions.json` (and if you applied the tip above, it will also `git add manifest.json versions.json` for you)
+   This will sync the current `package.json` version number to `manifest.json` and `versions.json`, and will also automatically `git add package.json manifest.json versions.json` for you, so you can commit afterwards
 
 ### Build and Release
 
