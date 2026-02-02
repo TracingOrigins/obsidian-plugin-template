@@ -48,7 +48,13 @@ Quick starting guide for new plugin devs:
    ```
    VAULT_PATH=C:/path/to/your/vault
    ```
+   > 💡 Tip: The project root includes an `.env.example` template. You can copy it to `.env` and fill in your actual path.
    > Note: The `.env` file is already in `.gitignore` and will not be committed to the repository
+   >
+   > **Path notes**:
+   > - On Windows, forward slashes are recommended: `C:/Users/Name/Documents/MyVault`
+   > - Paths with spaces do not require quotes
+   > - You can add comments using `#`
 
 5. **Start development mode**
    ```bash
@@ -92,12 +98,15 @@ npm version major   # 1.0.0 -> 2.0.0
 ```
 
 Execution flow of the `npm version` command (npm built-in behavior):
-1. Update the version number in `package.json`
+1. Update the version number in `package.json` (and may update the lockfile)
 2. Run the `version` script (i.e., `node version-bump.mjs`), sync to `manifest.json` and `versions.json`
 3. **Automatically create git commit** (if git working directory is clean)
 4. **Automatically create git tag** (tag name is the version number, e.g., `v1.0.1`)
 
 > Note: Creating git commit and tag is a built-in feature of the `npm version` command, not defined by our script. If the git working directory is not clean (has uncommitted changes), the command will fail.
+>
+> Tip: To ensure the commit created by `npm version` also includes changes to `manifest.json` and `versions.json`, update `package.json` to:
+> ` "version": "node version-bump.mjs && git add manifest.json versions.json" `
 
 **Method 2: Manual version update (recommended, more flexible)**
 1. Manually edit `package.json` and update the `version` field
@@ -105,7 +114,7 @@ Execution flow of the `npm version` command (npm built-in behavior):
    ```bash
    npm run version
    ```
-   This will sync the current `package.json` version number to `manifest.json` and `versions.json`
+   This will sync the current `package.json` version number to `manifest.json` and `versions.json` (and if you applied the tip above, it will also `git add manifest.json versions.json` for you)
 
 ### Build and Release
 
@@ -113,7 +122,7 @@ Execution flow of the `npm version` command (npm built-in behavior):
 ```bash
 npm run build
 ```
-Performs type checking, code minification build, and copies files from the `dist` directory to the Obsidian vault plugin directory. If the target path is a symlink, it will be automatically deleted and a real folder will be created.
+Performs type checking, a production (minified) build, and then copies files from the `dist` directory to the Obsidian vault plugin directory. If the destination path exists but is not a directory (e.g., a symlink/file), it will be removed and a directory will be created.
 
 > 💡 Production build uses file copying, suitable for release and final version testing
 
@@ -163,10 +172,10 @@ Used in development mode, automatically creates a symlink linking the `dist` dir
 
 **Features**:
 - Automatically creates `dist` directory (if it doesn't exist)
-- Checks and creates symlink to Obsidian vault plugin directory
-- If symlink exists but points to wrong location, automatically deletes and recreates it
-- If target path exists but is not a symlink, automatically deletes it and creates a symlink
-- Ensures `.obsidian/plugins` directory exists
+- Ensures the Obsidian plugin parent directory exists (`<Vault>/.obsidian/plugins`)
+- Checks whether the target path (`<Vault>/.obsidian/plugins/<plugin-id>`) already exists and is a symlink
+- If the symlink exists but points to the wrong location, deletes and recreates it
+- If the target path exists but is not a symlink (e.g., a directory/file), deletes it and creates the correct symlink
 
 **Use Case**: Automatically called in development mode (`npm run dev`)
 
@@ -176,16 +185,18 @@ Used in production build, copies build artifacts from the `dist` directory to th
 
 **Features**:
 - Copies `main.js`, `manifest.json`, and `styles.css` (optional) from `dist` directory
-- If target path is a symlink, automatically deletes the symlink and creates a real folder
-- If target path is a regular directory, uses it directly
-- If target path is not a directory, exits with error
+- If the target path exists and is a directory, uses it directly
+- If the target path exists but is not a directory (e.g., a symlink/file), deletes it and creates a directory
+- If a permission/filesystem error occurs while checking/creating directories, exits with error
 - Provides detailed copy progress and result statistics
 
 **Use Case**: Automatically called in production build (`npm run build`)
 
 **Notes**:
 - Both scripts depend on the `VAULT_PATH` environment variable in the `.env` file
-- If `VAULT_PATH` is not set, `link.js` will exit with error, `copy.js` will skip copying
+- If `VAULT_PATH` is not set:
+  - `link.js` will warn and exit with error (development mode needs the symlink)
+  - `copy.js` will warn and skip copying (so CI builds won’t fail)
 
 ## Funding URL
 

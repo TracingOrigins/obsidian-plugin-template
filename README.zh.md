@@ -48,8 +48,14 @@
    ```
    VAULT_PATH=C:/path/to/your/vault
    ```
+   > 💡 提示：项目根目录已提供 `.env.example` 文件作为模板，你可以复制它并填入实际路径
+   > 
    > 注意：`.env` 文件已在 `.gitignore` 中，不会被提交到仓库
-
+   > 
+   > **路径格式说明**：
+   > - Windows 推荐使用正斜杠：`C:/Users/Name/Documents/MyVault`
+   > - 路径中有空格不需要加引号
+   > - 可以使用 `#` 添加注释
 5. **启动开发模式**
    ```bash
    npm run dev
@@ -98,6 +104,8 @@ npm version major   # 1.0.0 -> 2.0.0
 4. **自动创建 git tag**（标签名为版本号，如 `v1.0.1`）
 
 > 注意：创建 git commit 和 tag 是 `npm version` 命令的内置功能，不是我们脚本定义的。如果 git 工作目录不干净（有未提交的更改），命令会失败。
+> 建议：为了让 `npm version` 创建的 commit **包含** `manifest.json` 和 `versions.json` 的变更，建议把 `package.json` 中的脚本改为：  
+> ` "version": "node version-bump.mjs && git add manifest.json versions.json" `
 
 **方式二：手动更新版本（推荐，更灵活）**
 1. 手动编辑 `package.json`，更新 `version` 字段
@@ -106,6 +114,7 @@ npm version major   # 1.0.0 -> 2.0.0
    npm run version
    ```
    这会同步当前 `package.json` 的版本号到 `manifest.json` 和 `versions.json`
+   （如果你按上面的建议配置了 `version` 脚本，还会自动 `git add manifest.json versions.json`，方便后续手动 commit）
 
 ### 构建与发布
 
@@ -163,10 +172,10 @@ npm run build
 
 **功能**：
 - 自动创建 `dist` 目录（如果不存在）
-- 检查并创建软链接到 Obsidian vault 插件目录
-- 如果软链接已存在但指向错误，自动删除并重新创建
-- 如果目标路径存在但不是软链接，自动删除并创建软链接
-- 确保 `.obsidian/plugins` 目录存在
+- 确保 Obsidian 插件父目录（`<Vault>/.obsidian/plugins`）存在
+- 检查目标路径（`<Vault>/.obsidian/plugins/<plugin-id>`）是否已存在且为软链接
+- 若已存在但指向错误，自动删除并重新创建
+- 若目标路径存在但不是软链接（例如目录/文件），自动删除并创建软链接
 
 **使用场景**：开发模式（`npm run dev`）自动调用
 
@@ -176,16 +185,18 @@ npm run build
 
 **功能**：
 - 从 `dist` 目录复制 `main.js`、`manifest.json` 和 `styles.css`（可选）
-- 如果目标路径是软链接，自动删除软链接并创建实际文件夹
-- 如果目标路径是普通目录，直接使用
-- 如果目标路径不是目录，报错退出
+- 如果目标路径已存在且是目录：直接使用
+- 如果目标路径已存在但不是目录（例如软链接、文件等）：自动删除后创建目录
+- 如果检查/创建目录过程中出现权限或文件系统错误：报错退出
 - 提供详细的复制进度和结果统计
 
 **使用场景**：生产构建（`npm run build`）自动调用
 
-**注意事项**：
+***注意事项**：
 - 两个脚本都依赖 `.env` 文件中的 `VAULT_PATH` 环境变量
-- 如果未设置 `VAULT_PATH`，`link.js` 会报错退出，`copy.js` 会跳过复制
+- 如果未设置 `VAULT_PATH`：
+  - `link.js` 会输出警告并报错退出，因为开发模式需要软链接
+  - `copy.js` 会输出警告并静默跳过，不会导致构建失败，适合 CI/CD 环境
 
 ## 资助链接
 

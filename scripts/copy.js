@@ -26,6 +26,9 @@ const manifestPath = path.join(distDir, 'manifest.json');
 
 const VAULT_PATH = process.env.VAULT_PATH;
 if (!VAULT_PATH) {
+    // console.warn('未设置 VAULT_PATH，无法复制文件。');
+    // console.warn('请在 .env 文件中设置 VAULT_PATH=你的vault路径');
+    // process.exit(1);
     console.warn('⚠️  未设置 VAULT_PATH，跳过复制。');
     process.exit(0);
 }

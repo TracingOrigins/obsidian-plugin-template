@@ -18,7 +18,7 @@ const manifestPath = path.join(projectRoot, 'manifest.json');
 // 从环境变量获取 vault 路径
 const VAULT_PATH = process.env.VAULT_PATH;
 if (!VAULT_PATH) {
-    console.warn('未设置 VAULT_PATH，无法创建软链接。(VAULT_PATH not set in .env, cannot create symlink.)');
+    console.warn('未设置 VAULT_PATH，无法创建软链接。');
     console.warn('请在 .env 文件中设置 VAULT_PATH=你的vault路径');
     process.exit(1);
 }
@@ -41,7 +41,7 @@ if (fs.existsSync(manifestPath) && !fs.existsSync(distManifestPath)) {
 
 // 读取 manifest.json 获取插件ID
 if (!fs.existsSync(manifestPath)) {
-    console.error('manifest.json 文件未找到，无法获取插件ID。(manifest.json not found, cannot get plugin id.)');
+    console.error('manifest.json 文件未找到，无法获取插件ID。');
     process.exit(1);
 }
 
@@ -51,7 +51,7 @@ try {
     pluginId = manifest.id;
     if (!pluginId) throw new Error();
 } catch {
-    console.error('无法从 manifest.json 获取插件ID。(Cannot get plugin id from manifest.json)');
+    console.error('无法从 manifest.json 获取插件ID。');
     process.exit(1);
 }
 
@@ -61,7 +61,7 @@ const targetPluginDir = path.join(absVaultPath, '.obsidian', 'plugins', pluginId
 // 检查目标目录是否已经是 dist 目录（避免循环链接）
 if (path.resolve(targetPluginDir) === path.resolve(distDir)) {
     console.warn(
-        `目标目录就是 dist 目录(${targetPluginDir})，无需创建软链接。(Target directory is the dist directory itself, no need to create symlink.)`
+        `目标目录就是 dist 目录(${targetPluginDir})，无需创建软链接。`
     );
     process.exit(0);
 }
@@ -76,7 +76,7 @@ if (fs.existsSync(targetPluginDir)) {
             const resolvedLinkTarget = path.resolve(path.dirname(targetPluginDir), linkTarget);
             if (resolvedLinkTarget === path.resolve(distDir)) {
                 console.log(`✅ 软链接已存在: ${targetPluginDir} -> ${distDir}`);
-                console.log('插件已链接，无需重复创建。(Plugin already linked, no need to recreate.)');
+                console.log('插件已链接，无需重复创建。');
                 process.exit(0);
             } else {
                 // 软链接存在但指向错误，删除后重新创建
