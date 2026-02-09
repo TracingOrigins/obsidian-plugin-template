@@ -20,7 +20,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import dotenv from 'dotenv';
 
 // ==================== 路径常量 ====================
@@ -70,12 +70,26 @@ function copyDir(src, dest) {
  * 创建可点击的路径链接（使用 OSC 8 转义序列，在部分终端中可直接点击文件路径）。
  * 主要用于在控制台输出中提供方便跳转的本地文件链接。
  * @param filePath 本地文件或目录路径
+ * @param displayText 展示给用户看的文本（可选，默认显示原始路径）
  * @returns 带有终端点击跳转能力的字符串
  */
-function createClickablePath(filePath) {
-	const normalizedPath = path.resolve(filePath).replace(/\\/g, '/');
-	const fileUrl = `file:///${normalizedPath}`;
-	return `\x1b]8;;${fileUrl}\x1b\\${filePath}\x1b]8;;\x1b\\`;
+function createClickablePath(filePath, displayText) {
+	const resolvedPath = path.resolve(filePath);
+	let targetPathForUrl = resolvedPath;
+
+	// 如果目标是目录，给 URL 结尾补上 "/"，部分终端/系统对目录打开更稳定
+	try {
+		if (fs.existsSync(resolvedPath) && fs.lstatSync(resolvedPath).isDirectory()) {
+			targetPathForUrl = resolvedPath.endsWith(path.sep) ? resolvedPath : resolvedPath + path.sep;
+		}
+	} catch {
+		// 忽略：只要能生成 URL 即可
+	}
+
+	// 使用标准 API 生成 file:// URL（自动处理 Windows 盘符与空格编码）
+	const fileUrl = pathToFileURL(targetPathForUrl).href;
+	const text = displayText ?? path.basename(resolvedPath);
+	return `\x1b]8;;${fileUrl}\x1b\\${text}\x1b]8;;\x1b\\`;
 }
 
 // ==================== 参数与配置解析 ====================
@@ -258,8 +272,7 @@ function deployDev(context) {
 
 		// 已存在且是软链接，且指向 dist：直接复用并返回
 		if (stats.isSymbolicLink() && isExistingSymlinkToDist(pluginDir)) {
-			// log.success(`软链接已存在!（dist → ${pluginId}）`);
-			log.success(`软链接已存在：dist → ${pluginId}`);
+			log.info(`链接成功：${createClickablePath(distDir, 'dist')} → ${createClickablePath(pluginDir, pluginId)}`);
 			return;
 		}
 
@@ -269,9 +282,9 @@ function deployDev(context) {
 
 	// 确保父目录存在
 	fs.mkdirSync(path.dirname(pluginDir), { recursive: true });
+	
 	fs.symlinkSync(distDir, pluginDir, linkType);
-	// log.success(`软链接创建成功！（dist → ${pluginId}）`);
-	log.success(`软链接创建成功：dist → ${pluginId}`);
+	log.info(`链接成功：${createClickablePath(distDir, 'dist')} → ${createClickablePath(pluginDir, pluginId)}`);
 }
 
 /**
@@ -291,8 +304,7 @@ function deployBuild(context) {
 	copyDir(distDir, pluginDir);
 	// 统计复制后的文件数量，用于日志输出
 	const fileNames = fs.readdirSync(pluginDir).sort();
-	// log.success(`复制成功！（dist → ${pluginId}，已复制 ${fileNames.length} 个文件）`);
-	log.success(`复制成功：dist → ${pluginId}，已复制 ${fileNames.length} 个文件`);
+	log.info(`复制成功：${createClickablePath(distDir, 'dist')} → ${createClickablePath(pluginDir, pluginId)}`);
 }
 
 // ==================== 主流程入口 ====================
@@ -314,9 +326,7 @@ function main() {
 	ensureDistReady();
 
 	log.info(`开始部署：${mode} 模式`);
-	log.info(`源路径：${createClickablePath(distDir)}`);
-	log.info(`目标路径：${createClickablePath(pluginDir)}`);
-
+	
 	// 构造部署上下文
 	const context = { mode, vaultPath, pluginId, pluginDir };
 

@@ -13,7 +13,6 @@
 	"keywords": [],
 	"license": "0-BSD",
 	"devDependencies": {
-		"@sprout2000/esbuild-copy-plugin": "^1.1.19",
 		"@types/node": "^16.11.6",
 		"dotenv": "^17.2.3",
 		"esbuild": "0.25.5",
